@@ -1,0 +1,28 @@
+# Konfigurasi aktif - tidak pernah dibagikan
+.env
+secrets/
+*.key
+*.pem
+
+# Lingkungan Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Keluaran runtime
+logs/*
+!logs/.gitkeep
+data/karantina/*
+!data/karantina/.gitkeep
+
+# Keluaran pipeline - dihasilkan ulang setiap kali dijalankan
+data/processed/hasil_pipeline.csv
+data/processed/hasil_pipeline.csv.sha256
+data/processed/ringkasan-*.csv
+data/processed/ringkasan-*.csv.sha256
+
+# Cadangan basis data - dapat memuat data lengkap
+backup/
+*.sql.gz
+*.dump

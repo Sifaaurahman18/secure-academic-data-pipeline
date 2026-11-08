@@ -1,0 +1,35 @@
+# Kebutuhan pustaka Secure Academic Data Pipeline
+#
+# Dipasang di dalam virtual environment:
+#
+#   python -m venv .venv
+#   source .venv/Scripts/activate      # Git Bash di Windows
+#   .venv\Scripts\activate             # Command Prompt di Windows
+#   python -m pip install --upgrade pip
+#   python -m pip install -r requirements.txt
+#
+# Catatan untuk dosen: setelah starter diuji pada komputer laboratorium,
+# kunci versinya dengan `python -m pip freeze > requirements.lock.txt`
+# agar seluruh kelas memakai versi yang sama sepanjang semester.
+
+# Pengolahan data - Pertemuan 10
+pandas
+
+# Koneksi basis data - Pertemuan 4, 7, 10, 11
+mysql-connector-python
+
+# Konfigurasi melalui variabel lingkungan - Pertemuan 4 dan seterusnya
+python-dotenv
+
+# Kriptografi terapan - Pertemuan 5
+cryptography
+argon2-cffi
+
+# Starter API - Pertemuan 9 dan 11
+fastapi
+uvicorn[standard]
+pydantic
+
+# Pengujian - Pertemuan 9, 10, 14
+httpx
+pytest

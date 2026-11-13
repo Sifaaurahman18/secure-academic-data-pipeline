@@ -106,41 +106,26 @@ def _rahasia_diketahui() -> tuple[str, ...]:
 # ---------------------------------------------------------------------
 
 
+
 def bersihkan(teks: str | None) -> str | None:
-    """Buang nilai rahasia dari teks sebelum teks itu masuk ke log.
+    """Membersihkan teks dari informasi rahasia sebelum dicatat ke log."""
 
-    Yang harus dipenuhi:
+    if teks is None:
+        return None
 
-      1. `None` dikembalikan apa adanya. Keterangan yang memang kosong bukan
-         kesalahan;
-      2. setiap nilai dari `_rahasia_diketahui()` yang muncul di dalam teks
-         diganti `PENGGANTI`. Kerjakan penggantian ini **lebih dahulu**: kata
-         sandi yang pendek tidak akan tertangkap kedua pola di bawah;
-      3. setiap pasangan yang cocok dengan `POLA_KATA_SANDI` diganti sehingga
-         nama kuncinya tetap terbaca tetapi nilainya hilang, misalnya
-         `password=[RAHASIA]`. Nama kunci sengaja dipertahankan supaya orang
-         yang membaca log tahu bahwa ada sesuatu yang disensor di sana, bukan
-         mengira tidak ada apa-apa;
-      4. setiap runtutan yang cocok dengan `POLA_MIRIP_TOKEN` diganti
-         `PENGGANTI`.
+    # 1. Sensor nilai rahasia yang diketahui dari konfigurasi.
+    for rahasia in _rahasia_diketahui():
+        teks = teks.replace(rahasia, PENGGANTI)
 
-    Petunjuk untuk butir 3: `re.sub` menerima fungsi sebagai pengganti.
-    Kelompok pertama pola tersebut berisi nama kuncinya, dan kelompok kedua
-    berisi tanda pemisahnya. Susun keduanya kembali apa adanya supaya
-    `password: YES` tidak ikut berubah menjadi `password=YES`.
+    # 2. Sensor pasangan kata sandi, tetapi pertahankan nama kuncinya.
+    teks = POLA_KATA_SANDI.sub(
+        lambda cocok: cocok.group(1) + cocok.group(2) + PENGGANTI,
+        teks
+    )
 
-    Uji cepat sesudah selesai:
+    # 3. Sensor rangkaian karakter yang menyerupai token atau kunci.
+    teks = POLA_MIRIP_TOKEN.sub(PENGGANTI, teks)
 
-        >>> bersihkan("gagal connect user=operator_pipeline password=rahasia123")
-        'gagal connect user=operator_pipeline password=[RAHASIA]'
-
-    Perlu diketahui batasnya. Penyensoran adalah jaring pengaman lapis kedua,
-    bukan lapis pertama. Lapis pertama adalah tidak pernah menyusun pesan yang
-    memuat rahasia sejak awal. Fungsi ini ada karena pesan galat dari pustaka
-    pihak ketiga tidak berada dalam kendali Anda, bukan supaya Anda merasa
-    aman mencatat apa saja.
-    """
-    # TODO 4: baris berikut meneruskan teks apa adanya, termasuk rahasianya.
     return teks
 
 

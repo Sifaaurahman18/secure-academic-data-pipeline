@@ -1,3 +1,4 @@
+
 """Keutuhan berkas: ringkasan SHA-256 dan gerbang masukan.
 
 **TODO 1 ada di berkas ini.** Kerjakan bagian A lebih dahulu, baru bagian B.
@@ -81,27 +82,19 @@ def baca_manifest(berkas_manifest: Path | None = None) -> dict[str, str]:
 
 
 def hitung_sha256(berkas: Path) -> str:
-    """Hitung ringkasan SHA-256 sebuah berkas dan kembalikan sebagai teks heksadesimal.
+    """Hitung ringkasan SHA-256 sebuah berkas secara bertahap."""
+    sha256 = hashlib.sha256()
 
-    Yang harus dipenuhi:
+    with berkas.open("rb") as sumber:
+        while True:
+            potongan = sumber.read(UKURAN_POTONG)
 
-      1. berkas dibaca dalam mode biner (`"rb"`), bukan mode teks. Membaca
-         sebagai teks membuat Windows mengubah akhir baris, sehingga berkas
-         yang sama menghasilkan ringkasan berbeda di komputer berbeda;
-      2. berkas dibaca bertahap sebesar `UKURAN_POTONG`, bukan sekaligus;
-      3. hasilnya huruf kecil semua, supaya dapat dibandingkan langsung dengan
-         isi manifest.
+            if not potongan:
+                break
 
-    Petunjuk: `hashlib.sha256()` menghasilkan objek dengan metode `update()`
-    dan `hexdigest()`. Bacalah berkas di dalam perulangan sampai `read()`
-    mengembalikan bita kosong.
+            sha256.update(potongan)
 
-    Uji cepat tanpa menunggu seluruh pipeline selesai:
-
-        python -c "from pathlib import Path; from pipeline import keutuhan; \\
-                   print(keutuhan.hitung_sha256(Path('data/manifest.sha256')))"
-    """
-    raise NotImplementedError("TODO 1 bagian A belum dikerjakan: hitung_sha256()")
+    return sha256.hexdigest().lower()
 
 
 # ---------------------------------------------------------------------
@@ -133,11 +126,17 @@ def gerbang_keutuhan(berkas: Path) -> str:
     tercatat = baca_manifest().get(kunci_manifest(berkas))
     sebenarnya = hitung_sha256(berkas)
 
-    # TODO 1 bagian B: ganti seluruh blok di bawah ini.
     if tercatat is None:
-        print(f"PERINGATAN: {berkas.name} tidak tercatat pada manifest.")
-    elif tercatat != sebenarnya:
-        print(f"PERINGATAN: ringkasan {berkas.name} tidak sesuai manifest.")
+        raise KeutuhanGagal(
+            f"{berkas.name} tidak tercatat pada manifest. "
+            f"Ringkasan ditemukan: {sebenarnya}"
+        )
+
+    if tercatat != sebenarnya:
+        raise KeutuhanGagal(
+            f"Ringkasan {berkas.name} tidak sesuai manifest. "
+            f"Tercatat: {tercatat}; ditemukan: {sebenarnya}"
+        )
 
     return sebenarnya
 

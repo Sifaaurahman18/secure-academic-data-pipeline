@@ -85,13 +85,13 @@ GRANT SELECT ON secure_academic_lab.log_aktivitas TO 'r_auditor';
 -- ---------------------------------------------------------------------
 
 CREATE USER 'app_service'@'localhost'
-  IDENTIFIED BY 'app_service_password';
+  IDENTIFIED BY '__GANTI_PASSWORD_APP_SERVICE__';
 CREATE USER 'analyst'@'localhost'
-  IDENTIFIED BY 'analyst_password';
+  IDENTIFIED BY '__GANTI_PASSWORD_ANALYST__';
 CREATE USER 'operator_pipeline'@'localhost'
-  IDENTIFIED BY 'operator_pipeline_password';
+  IDENTIFIED BY '__GANTI_PASSWORD_OPERATOR_PIPELINE__';
 CREATE USER 'auditor'@'localhost'
-  IDENTIFIED BY 'auditor_password';
+  IDENTIFIED BY '__GANTI_PASSWORD_AUDITOR__';
 
 -- Akun administrator laboratorium. Dipakai untuk membuat skema, memuat
 -- seed, dan mengelola akun. TIDAK dipakai oleh pipeline maupun API.

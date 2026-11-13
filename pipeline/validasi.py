@@ -47,47 +47,47 @@ KOLOM_KARANTINA = ("alasan", *aturan.KOLOM_WAJIB)
 # ---------------------------------------------------------------------
 
 
+
 def cari_duplikat(baris: list[dict[str, str]]) -> dict[int, list[str]]:
-    """Cari baris yang menduplikasi baris lain, dan kembalikan alasannya.
+    """Cari duplikasi record_id dan kunci alami secara deterministik."""
 
-    Kembalikan pemetaan **indeks pada senarai masukan** ke daftar kode dari
-    `aturan.ATURAN_ANTARBARIS`. Indeks yang tidak muncul pada hasil berarti
-    barisnya dipertahankan.
+    hasil: dict[int, list[str]] = {}
 
-    Dua bentuk duplikasi yang harus ditemukan:
+    record_id_terpakai: set[str] = set()
+    kunci_alami_terpakai: set[tuple[str, str, str]] = set()
 
-      1. `record_id` yang sama dipakai lebih dari satu baris;
-      2. kombinasi `kode_mahasiswa`, `kode_mk`, dan `semester` yang sama
-         dipakai lebih dari satu baris. Kamus data menyebutnya kunci alami:
-         satu mahasiswa tidak boleh punya dua catatan nilai untuk mata kuliah
-         dan semester yang sama.
+    # Periksa berdasarkan record_id terkecil terlebih dahulu.
+    urut = sorted(
+        enumerate(baris),
+        key=lambda pasangan: pasangan[1]["record_id"]
+    )
 
-    Satu baris dapat melanggar keduanya sekaligus. Kembalikan kedua kodenya
-    bila memang demikian; jangan berhenti pada temuan pertama.
+    for indeks, satu in urut:
+        temuan: list[str] = []
 
-    **Urutan pemeriksaan menentukan hasil, dan karena itu harus ditetapkan.**
-    Ketika dua baris berebut kunci yang sama, salah satunya dipertahankan dan
-    sisanya ditolak. Bila yang dipertahankan adalah "yang lebih dahulu muncul
-    di dalam berkas", hasil pipeline bergantung pada urutan baris — padahal
-    urutan itu kebetulan, dan sumber data yang sama dapat mengekspor ulang
-    isinya dengan urutan berbeda tanpa ada yang berubah maknanya.
+        record_id = satu["record_id"]
+        kunci_alami = (
+            satu["kode_mahasiswa"],
+            satu["kode_mk"],
+            satu["semester"],
+        )
 
-    Karena itu **periksa baris menurut `record_id` menaik**, bukan menurut
-    urutan kemunculannya. Yang dipertahankan adalah baris dengan `record_id`
-    terkecil di antara yang berebut; sisanya ditolak. Urutan itu ditentukan
-    isi data, bukan kebetulan penyimpanan, sehingga hasilnya sama pada setiap
-    komputer dan pada setiap kali dijalankan.
+        # Periksa duplikasi record_id.
+        if record_id in record_id_terpakai:
+            temuan.append("RECORD_ID_GANDA")
+        else:
+            record_id_terpakai.add(record_id)
 
-    Petunjuk: `sorted(enumerate(baris), key=lambda pasangan: pasangan[1]["record_id"])`
-    memberikan pasangan indeks dan baris dalam urutan yang diminta, sekaligus
-    mempertahankan indeks aslinya untuk dikembalikan.
+        # Periksa duplikasi kunci alami.
+        if kunci_alami in kunci_alami_terpakai:
+            temuan.append("KUNCI_ALAMI_GANDA")
+        else:
+            kunci_alami_terpakai.add(kunci_alami)
 
-    Pada berkas mentah proyek, fungsi ini harus menemukan **tepat dua baris**:
-    satu yang melanggar kedua aturan sekaligus, dan satu yang hanya melanggar
-    aturan kunci alami.
-    """
-    # TODO 3: ganti baris berikut. Kamus kosong berarti tidak ada duplikat.
-    return {}
+        if temuan:
+            hasil[indeks] = temuan
+
+    return hasil
 
 
 # ---------------------------------------------------------------------

@@ -1,24 +1,7 @@
+
 """Aturan validasi satu baris data akademik.
 
-**TODO 2 ada di berkas ini.**
-
-Seluruh aturan di sini berasal dari kamus data proyek bagian 2 dan 3
-(`data/kamus_data_proyek.md`). Kamus itulah sumber kebenarannya; berkas ini
-hanya menuliskannya kembali dalam bentuk yang dapat dijalankan. Bila keduanya
-berbeda, kamus yang benar dan berkas ini yang harus diperbaiki.
-
-Satu rancangan yang perlu diperhatikan: fungsi di sini **tidak mencetak apa
-pun dan tidak menulis berkas apa pun**. Fungsi ini hanya menerima satu baris
-dan mengembalikan daftar kode aturan yang dilanggar. Pemisahan itu membuat
-aturan dapat diuji satu per satu tanpa menjalankan seluruh pipeline, dan
-membuat keputusan tentang apa yang dilakukan terhadap baris bermasalah —
-ditolak, dikarantina, atau dihentikan — berada di satu tempat, yaitu
-`validasi.py`.
-
-Berkas mentah proyek memuat 23 baris bermasalah yang disengaja. Dua puluh satu
-di antaranya melanggar aturan pada berkas ini. Dua sisanya sah bila dibaca
-sendiri-sendiri dan hanya bermasalah dalam hubungannya dengan baris lain;
-keduanya ditangani TODO 3 pada `validasi.py`.
+TODO 2: Aturan validasi satu baris berdasarkan kamus data proyek.
 """
 
 from __future__ import annotations
@@ -64,9 +47,6 @@ BATAS_NILAI_LULUS = 60
 BATAS_KEHADIRAN_LULUS = 75
 
 # --- Katalog aturan --------------------------------------------------
-# Kode inilah yang ditulis ke berkas karantina dan dihitung pada ringkasan.
-# Kode yang tetap sama antarjalannya membuat dua hasil pipeline dapat
-# dibandingkan; kalimat penjelasan yang berubah-ubah tidak dapat.
 
 ATURAN: dict[str, str] = {
     "WAJIB_KOSONG": "Satu atau lebih kolom wajib tidak terisi.",
@@ -84,27 +64,17 @@ ATURAN: dict[str, str] = {
     "WAKTU_TIDAK_SAH": "Waktu pembaruan tidak berbentuk YYYY-MM-DDTHH:MM:SS.",
 }
 
-# Aturan yang tidak dapat diperiksa dari satu baris saja. Sebuah baris dapat
-# melanggar keduanya sekaligus, dan pada berkas mentah proyek memang ada satu
-# baris semacam itu.
 ATURAN_ANTARBARIS: dict[str, str] = {
     "RECORD_ID_GANDA": "record_id sudah dipakai baris lain pada berkas yang sama.",
     "KUNCI_ALAMI_GANDA": "Kombinasi kode_mahasiswa, kode_mk, dan semester sudah ada.",
 }
 
 
-# ---------------------------------------------------------------------
-# Sudah jadi — pembantu yang boleh langsung Anda pakai
-# ---------------------------------------------------------------------
+# --- Fungsi pembantu -------------------------------------------------
 
 
 def bilangan_bulat(teks: str) -> int | None:
-    """Ubah teks menjadi bilangan bulat, atau `None` bila tidak dapat diubah.
-
-    Mengembalikan `None` alih-alih melemparkan pengecualian membuat pemanggil
-    dapat membedakan "bukan bilangan" dari "bilangan yang di luar rentang".
-    Keduanya cacat, tetapi sebabnya berbeda dan perbaikannya juga berbeda.
-    """
+    """Ubah teks menjadi bilangan bulat, atau None bila gagal."""
     try:
         return int(teks.strip())
     except (ValueError, AttributeError):
@@ -112,12 +82,7 @@ def bilangan_bulat(teks: str) -> int | None:
 
 
 def waktu_sah(teks: str) -> bool:
-    """Periksa apakah teks berbentuk `YYYY-MM-DDTHH:MM:SS` dan tanggalnya ada.
-
-    Pemeriksaan bentuk saja tidak cukup. Teks `2026-13-45T99:00:00` memenuhi
-    bentuknya, tetapi bulan ke-13 dan tanggal 45 tidak pernah ada.
-    `datetime.strptime` memeriksa keduanya sekaligus.
-    """
+    """Periksa format dan keabsahan tanggal waktu."""
     try:
         datetime.strptime(teks.strip(), BENTUK_WAKTU)
     except (ValueError, AttributeError):
@@ -126,29 +91,20 @@ def waktu_sah(teks: str) -> bool:
 
 
 def tentukan_kelulusan(nilai: int, kehadiran: int) -> str:
-    """Hitung status kelulusan dari nilai dan kehadiran.
-
-    Aturan ini adalah model latihan mata kuliah, bukan ketentuan akademik yang
-    berlaku di program studi. Karena status kelulusan dapat dihitung ulang dari
-    kolom lain, kolom tersebut berguna untuk melatih pemeriksaan konsistensi:
-    catatan yang menyatakan `Lulus` padahal nilainya 41 menandakan data telah
-    berubah, salah dimasukkan, atau berasal dari sumber yang tidak dapat
-    dipercaya.
-    """
+    """Tentukan status kelulusan berdasarkan nilai dan kehadiran."""
     if nilai >= BATAS_NILAI_LULUS and kehadiran >= BATAS_KEHADIRAN_LULUS:
         return "Lulus"
     return "Tidak Lulus"
 
 
 def muat_kode_mk_sah(berkas: Path | None = None) -> set[str]:
-    """Baca kode mata kuliah yang sah dari berkas referensi.
-
-    Daftar ini dibaca dari berkas, bukan ditulis di dalam kode, supaya
-    penambahan mata kuliah baru tidak menuntut kode pipeline diubah.
-    """
+    """Baca kode mata kuliah yang sah dari berkas referensi."""
     sumber = berkas or konfigurasi.BERKAS_REFERENSI_MK
     with sumber.open(encoding="utf-8", newline="") as berkas_referensi:
-        return {baris["kode_mk"] for baris in csv.DictReader(berkas_referensi)}
+        return {
+            baris["kode_mk"]
+            for baris in csv.DictReader(berkas_referensi)
+        }
 
 
 # ---------------------------------------------------------------------
@@ -156,59 +112,133 @@ def muat_kode_mk_sah(berkas: Path | None = None) -> set[str]:
 # ---------------------------------------------------------------------
 
 
-def periksa_baris(baris: dict[str, str], kode_mk_sah: set[str]) -> list[str]:
-    """Kembalikan daftar kode aturan yang dilanggar satu baris.
+def periksa_baris(
+    baris: dict[str, str],
+    kode_mk_sah: set[str],
+) -> list[str]:
+    """Periksa satu baris dan kembalikan seluruh kode aturan yang dilanggar."""
 
-    Daftar kosong berarti baris tersebut sah. Kode yang dikembalikan harus
-    berasal dari `ATURAN`; kode di luar daftar itu akan ditolak pemeriksa
-    hasil.
+    temuan: list[str] = []
 
-    Contoh bentuk yang diharapkan, memakai satu aturan sebagai contoh:
+    # 1. Pemeriksaan kolom wajib.
+    # Semua kolom kosong hanya menghasilkan satu kode WAJIB_KOSONG.
+    kolom_kosong = {
+        kolom
+        for kolom in KOLOM_WAJIB
+        if not str(baris.get(kolom, "") or "").strip()
+    }
 
-        temuan: list[str] = []
-        if baris["status_pendampingan"] not in STATUS_PENDAMPINGAN_SAH:
-            temuan.append("STATUS_PENDAMPINGAN_TIDAK_SAH")
-        ...
-        return temuan
+    if kolom_kosong:
+        temuan.append("WAJIB_KOSONG")
 
-    Tiga hal yang menentukan benar atau tidaknya jawaban Anda:
+    # 2. Format kode mahasiswa.
+    kode_mahasiswa = str(baris.get("kode_mahasiswa", "") or "").strip()
+    if (
+        "kode_mahasiswa" not in kolom_kosong
+        and not POLA_KODE_MAHASISWA.fullmatch(kode_mahasiswa)
+    ):
+        temuan.append("KODE_MAHASISWA_TIDAK_BERPOLA")
 
-      1. **Satu kolom kosong hanya menghasilkan satu temuan.** Kolom
-         `nilai_angka` yang kosong melanggar `WAJIB_KOSONG`, dan pemeriksaan
-         lain atas kolom itu dilewati. Melaporkan bahwa teks kosong juga
-         "bukan bilangan" dan juga "di luar rentang" tidak menambah informasi
-         apa pun bagi orang yang harus memperbaiki datanya.
+    # 3. Program studi.
+    program_studi = str(baris.get("program_studi", "") or "").strip()
+    if (
+        "program_studi" not in kolom_kosong
+        and program_studi not in PROGRAM_STUDI_BAKU
+    ):
+        temuan.append("PROGRAM_STUDI_TIDAK_BAKU")
 
-      2. **Konsistensi kelulusan hanya diperiksa bila bahan hitungnya sah.**
-         Bandingkan `status_kelulusan` dengan `tentukan_kelulusan()` hanya
-         ketika nilai dan kehadiran sudah terbukti bilangan bulat dalam
-         rentang 0 sampai 100, dan status kelulusannya sendiri sudah ada pada
-         `STATUS_KELULUSAN_SAH`. Baris yang nilainya `N/A` tidak dapat
-         dinyatakan tidak konsisten, karena tidak ada yang dapat dihitung.
+    # 4. Semester.
+    semester_teks = str(baris.get("semester", "") or "").strip()
+    if "semester" not in kolom_kosong:
+        semester = bilangan_bulat(semester_teks)
+        if semester not in SEMESTER_SAH:
+            temuan.append("SEMESTER_TIDAK_SAH")
 
-      3. **Setiap baris cacat pada berkas mentah proyek melanggar tepat satu
-         aturan.** Sifat itu disengaja oleh pembuat datasetnya. Bila jawaban
-         Anda menghasilkan dua kode untuk satu baris, hampir pasti butir 1
-         atau butir 2 di ataslah yang terlewat.
+    # 5. Kode mata kuliah.
+    kode_mk = str(baris.get("kode_mk", "") or "").strip()
+    if (
+        "kode_mk" not in kolom_kosong
+        and kode_mk not in kode_mk_sah
+    ):
+        temuan.append("KODE_MK_TIDAK_TERDAFTAR")
 
-    Petunjuk urutan pengerjaan: kerjakan `WAJIB_KOSONG` lebih dahulu, lalu
-    aturan per kolom, dan simpan `KELULUSAN_TIDAK_KONSISTEN` untuk paling
-    akhir karena aturan itu bergantung pada hasil aturan sebelumnya.
+    # 6. Nilai angka.
+    nilai = None
+    if "nilai_angka" not in kolom_kosong:
+        nilai_teks = str(baris.get("nilai_angka", "")).strip()
+        nilai = bilangan_bulat(nilai_teks)
 
-    Jumlah temuan yang benar pada berkas mentah proyek, sebagai pembanding:
+        if nilai is None:
+            temuan.append("NILAI_BUKAN_BILANGAN")
+        elif not NILAI_MINIMUM <= nilai <= NILAI_MAKSIMUM:
+            temuan.append("NILAI_DI_LUAR_RENTANG")
 
-        WAJIB_KOSONG                    2      KODE_MK_TIDAK_TERDAFTAR        2
-        NILAI_BUKAN_BILANGAN            2      PROGRAM_STUDI_TIDAK_BAKU       3
-        NILAI_DI_LUAR_RENTANG           3      WAKTU_TIDAK_SAH                2
-        KEHADIRAN_DI_LUAR_RENTANG       2      SEMESTER_TIDAK_SAH             1
-        STATUS_KELULUSAN_TIDAK_SAH      1      STATUS_PENDAMPINGAN_TIDAK_SAH  1
-        KELULUSAN_TIDAK_KONSISTEN       2                             jumlah  21
+    # 7. Persentase kehadiran.
+    kehadiran = None
+    if "persentase_kehadiran" not in kolom_kosong:
+        kehadiran_teks = str(
+            baris.get("persentase_kehadiran", "")
+        ).strip()
 
-    Dua aturan sisanya, `KODE_MAHASISWA_TIDAK_BERPOLA` dan
-    `KEHADIRAN_BUKAN_BILANGAN`, tidak pernah dilanggar berkas mentah proyek.
-    Keduanya tetap wajib Anda terapkan: aturan ada karena kamus data
-    mensyaratkannya, bukan karena kebetulan ada data yang melanggarnya hari
-    ini. Pemeriksa hasil mengujinya memakai baris buatan.
-    """
-    # TODO 2: ganti baris berikut dengan pemeriksaan yang sebenarnya.
-    return []
+        kehadiran = bilangan_bulat(kehadiran_teks)
+
+        if kehadiran is None:
+            temuan.append("KEHADIRAN_BUKAN_BILANGAN")
+        elif not NILAI_MINIMUM <= kehadiran <= NILAI_MAKSIMUM:
+            temuan.append("KEHADIRAN_DI_LUAR_RENTANG")
+
+    # 8. Status kelulusan.
+    status_kelulusan = str(
+        baris.get("status_kelulusan", "") or ""
+    ).strip()
+
+    status_kelulusan_valid = (
+        "status_kelulusan" not in kolom_kosong
+        and status_kelulusan in STATUS_KELULUSAN_SAH
+    )
+
+    if (
+        "status_kelulusan" not in kolom_kosong
+        and not status_kelulusan_valid
+    ):
+        temuan.append("STATUS_KELULUSAN_TIDAK_SAH")
+
+    # 9. Konsistensi kelulusan.
+    # Hanya diperiksa jika nilai dan kehadiran valid dalam rentang.
+    nilai_valid = (
+        nilai is not None
+        and NILAI_MINIMUM <= nilai <= NILAI_MAKSIMUM
+    )
+
+    kehadiran_valid = (
+        kehadiran is not None
+        and NILAI_MINIMUM <= kehadiran <= NILAI_MAKSIMUM
+    )
+
+    if nilai_valid and kehadiran_valid and status_kelulusan_valid:
+        status_seharusnya = tentukan_kelulusan(nilai, kehadiran)
+
+        if status_kelulusan != status_seharusnya:
+            temuan.append("KELULUSAN_TIDAK_KONSISTEN")
+
+    # 10. Status pendampingan.
+    status_pendampingan = str(
+        baris.get("status_pendampingan", "") or ""
+    ).strip()
+
+    if (
+        "status_pendampingan" not in kolom_kosong
+        and status_pendampingan not in STATUS_PENDAMPINGAN_SAH
+    ):
+        temuan.append("STATUS_PENDAMPINGAN_TIDAK_SAH")
+
+    # 11. Waktu pembaruan.
+    waktu = str(baris.get("waktu_pembaruan", "") or "").strip()
+
+    if (
+        "waktu_pembaruan" not in kolom_kosong
+        and not waktu_sah(waktu)
+    ):
+        temuan.append("WAKTU_TIDAK_SAH")
+
+    return temuan

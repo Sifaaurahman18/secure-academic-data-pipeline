@@ -36,54 +36,42 @@ if hasattr(sys.stdout, "reconfigure"):
 # ---------------------------------------------------------------------
 
 
+
 def muat_batch(
     sambungan,
     baris: list[dict[str, str]],
     batch_id: str,
     ukuran_batch: int = konfigurasi.UKURAN_BATCH,
 ) -> int:
-    """Sisipkan seluruh baris ke `staging_nilai`, dan kembalikan jumlahnya.
+    """Sisipkan seluruh baris ke staging dalam satu transaksi."""
 
-    Yang harus dipenuhi:
-
-      1. **Seluruh pemuatan adalah satu transaksi.** Matikan `autocommit`,
-         lalu panggil `sambungan.commit()` satu kali saja setelah baris
-         terakhir berhasil disisipkan;
-      2. **Kegagalan mana pun membatalkan seluruhnya.** Tangkap pengecualian
-         dari proses penyisipan, panggil `sambungan.rollback()`, lalu lemparkan
-         kembali pengecualian itu agar pemanggil tahu pemuatan tidak jadi;
-      3. jumlah baris yang dikembalikan adalah jumlah yang benar-benar
-         tersisip, bukan panjang senarai masukan.
-
-    Bentuk yang dikirim ke basis data sudah disiapkan `_sebagai_tupel()`, dan
-    seluruh nilainya dikirim sebagai parameter. Jangan merangkai nilai apa pun
-    ke dalam teks SQL.
-
-    Kode yang ada di bawah ini sengaja ditulis dengan cara yang keliru:
-    `autocommit` menyala dan setiap potongan langsung permanen. Cobalah
-    memutus MySQL di tengah pemuatan sebelum Anda memperbaikinya, lalu periksa
-    isi tabel staging. Yang tertinggal adalah setengah batch tanpa penanda apa
-    pun bahwa batch itu tidak lengkap — dan laporan yang dihitung dari data
-    setengah jadi akan tampak wajar, hanya saja salah.
-
-    Worksheet bagian E meminta bukti kedua perilaku tersebut: satu jalan yang
-    berhasil, dan satu jalan yang gagal di tengah lalu tidak menyisakan apa pun.
-
-    Petunjuk: `kursor.executemany(basis_data.PERINTAH_SISIP, potongan)`
-    menyisipkan satu potongan sekaligus, dan `kursor.rowcount` menyebut jumlah
-    baris yang tersisip pada pemanggilan itu.
-    """
-    # TODO 5: ganti seluruh isi fungsi ini.
-    sambungan.autocommit = True
+    sambungan.autocommit = False
     tersisip = 0
     kursor = sambungan.cursor()
-    for awal in range(0, len(baris), ukuran_batch):
-        potongan = [_sebagai_tupel(satu, batch_id) for satu in baris[awal : awal + ukuran_batch]]
-        kursor.executemany(basis_data.PERINTAH_SISIP, potongan)
-        tersisip += len(potongan)
-    kursor.close()
-    return tersisip
 
+    try:
+        for awal in range(0, len(baris), ukuran_batch):
+            potongan = [
+                _sebagai_tupel(satu, batch_id)
+                for satu in baris[awal : awal + ukuran_batch]
+            ]
+
+            kursor.executemany(
+                basis_data.PERINTAH_SISIP,
+                potongan
+            )
+
+            tersisip += kursor.rowcount
+
+        sambungan.commit()
+        return tersisip
+
+    except Exception:
+        sambungan.rollback()
+        raise
+
+    finally:
+        kursor.close()
 
 # ---------------------------------------------------------------------
 # Sudah jadi — tidak perlu diubah
